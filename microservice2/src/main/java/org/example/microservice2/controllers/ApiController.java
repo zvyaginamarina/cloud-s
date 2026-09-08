@@ -9,6 +9,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 /**
  * Контроллер, отвечающий за обработку запросов к микросервису 2.
  */
@@ -25,6 +29,7 @@ public class ApiController {
      *
      * @return Приветственное сообщение от микросервиса 2.
      */
+
     @GetMapping("/hello")
     public String hello() {
         Message<String> message = MessageBuilder
@@ -34,5 +39,3 @@ public class ApiController {
         return "Приветствую! Вы в приложении: App-2";
     }
 }
-
-

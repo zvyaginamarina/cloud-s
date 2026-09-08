@@ -32,7 +32,7 @@ public class Microservice1IntegrationConfig {
         handler.setFileExistsMode(FileExistsMode.APPEND);
         handler.setAutoCreateDirectory(true);
         handler.setExpectReply(false);
+        handler.setAppendNewLine(true);
         return handler;
     }
 }
-

@@ -15,8 +15,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 import java.util.Date;
 import java.util.Map;
+
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 
 /**
  * Контроллер, отвечающий за обработку запросов к микросервису 1.
@@ -25,31 +32,35 @@ import java.util.Map;
 @RequestMapping("/serviceA")
 public class ApiController {
 
-    @Autowired
-    @Qualifier("microservice1FileWriterChannel")
-    private MessageChannel fileWriterChannel;
+        @Autowired
+        @Qualifier("microservice1FileWriterChannel")
+        private MessageChannel fileWriterChannel;
 
-    @GetMapping("/hello")
-    public ResponseEntity<String> hello(@RequestParam Map<String, String> allParams) {
-        if (containsInvalidParameters(allParams)) {
-            return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body("Недопустимые параметры запроса");
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200"),
+                        @ApiResponse(responseCode = "400") })
+
+        @GetMapping("/hello")
+        public ResponseEntity<String> hello(@Parameter(hidden = true) @RequestParam Map<String, String> allParams) {
+                if (containsInvalidParameters(allParams)) {
+                        return ResponseEntity
+                                        .status(HttpStatus.BAD_REQUEST)
+                                        .body("Недопустимые параметры запроса");
+                }
+
+                Message<String> message = MessageBuilder
+                                .withPayload("MS1: User request: /hello")
+                                .build();
+                fileWriterChannel.send(message);
+
+                return ResponseEntity.ok()
+                                .header(HttpHeaders.DATE, new Date().toString())
+                                .body("Приветствую! Вы в приложении: App-1");
         }
 
-        Message<String> message = MessageBuilder
-                .withPayload("MS1: User request: /hello")
-                .build();
-        fileWriterChannel.send(message);
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.DATE, new Date().toString())
-                .body("Приветствую! Вы в приложении: App-1");
-    }
-
-    private boolean containsInvalidParameters(Map<String, String> params) {
-        return params.values().stream()
-                .anyMatch(value -> value != null &&
-                        (value.contains("\0") || value.matches(".*[\\\\<>\"'].*")));
-    }
+        private boolean containsInvalidParameters(Map<String, String> params) {
+                return params.values().stream()
+                                .anyMatch(value -> value != null &&
+                                                (value.contains("\0") || value.matches(".*[\\\\<>\"'].*")));
+        }
 }
