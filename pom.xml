@@ -22,8 +22,10 @@
         <java.version>17</java.version>
         <spring-cloud.version>2023.0.0</spring-cloud.version>
         <micrometer.version>1.12.3</micrometer.version>
-        <lombok.version>1.18.30</lombok.version>
+        <lombok.version>1.18.48</lombok.version>
         <springdoc.version>2.3.0</springdoc.version>
+        <allire-junit.version>2.35.5</allire-junit.version>
+        <allire-mvn.version>2.10.0</allire-mvn.version>
     </properties>
 
     <dependencies>
@@ -120,6 +122,12 @@
                 <version>${springdoc.version}</version>
                 <scope>compile</scope>
             </dependency>
+            <dependency>
+                <groupId>io.qameta.allure</groupId>
+                <artifactId>allure-jupiter</artifactId>
+                <version>${allire-junit.version}</version>
+                <scope>test</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
     <build>
@@ -148,6 +156,11 @@
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>io.qameta.allure</groupId>
+                <artifactId>allure-maven</artifactId>
+                <version>${allire-mvn.version}</version>
             </plugin>
         </plugins>
     </build>

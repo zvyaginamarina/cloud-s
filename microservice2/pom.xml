@@ -21,7 +21,7 @@
         <java.version>17</java.version>
         <spring-cloud.version>2023.0.0</spring-cloud.version>
         <micrometer.version>1.12.3</micrometer.version>
-        <lombok.version>1.18.30</lombok.version>
+        <lombok.version>1.18.48</lombok.version>
     </properties>
 
     <dependencies>
