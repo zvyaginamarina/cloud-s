@@ -1,8 +1,14 @@
 package tests.api;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Disabled;
@@ -13,6 +19,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.playwright.APIResponse;
 
 import tests.BaseTest;
@@ -86,7 +94,7 @@ public class ApiTests extends BaseTest {
 
     @ParameterizedTest
     @ValueSource(strings = { ">", "<", "\u0000", "\\", "\'", "\"" })
-    @DisplayName("Unvalid qurey param's name or value returns 400")
+    @DisplayName("Invalid qurey param's value returns 400")
     void serviceAIncorrectParamsValueValidation(String symbol) {
         APIResponse response = clientA.getWithQueries(TestConfig.INSTANCE.serviceAEndpoint(), "name",
                 "test" + symbol);
@@ -98,7 +106,7 @@ public class ApiTests extends BaseTest {
     @Disabled("BUG: No validation on parameter's names, should return 400 when invalid symbols in parameter's name, but return 200")
     @ParameterizedTest
     @ValueSource(strings = { ">", "<", "\u0000", "\\", "\'", "\"" })
-    @DisplayName("Unvalid qurey param's name or value returns 400")
+    @DisplayName("Invalid qurey param's name returns 400")
     void serviceAIncorrectParamsValidation(String symbol) {
         APIResponse response = clientA.getWithQueries(TestConfig.INSTANCE.serviceAEndpoint(),
                 "name" + symbol,
@@ -106,6 +114,41 @@ public class ApiTests extends BaseTest {
 
         assertEquals(400, response.status());
         assertTrue(response.text().contains("Недопустимые параметры запроса"));
+    }
+
+    @Test
+    @DisplayName("Log file created and contains correct info")
+    void logFileCreatedAndContainsInfo() throws IOException {
+        Path logPath = Path.of(TestConfig.INSTANCE.ms1FilePath(), "requests.log");
+
+        Files.writeString(logPath, "");
+
+        clientA.get(TestConfig.INSTANCE.serviceAEndpoint());
+
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+            List<String> logData = Files.readAllLines(logPath);
+            assertEquals(1, logData.size());
+            assertEquals("MS1: User request: /hello", logData.get(0));
+        });
+    }
+
+    @ParameterizedTest
+    @DisplayName("Incorrect gateway route")
+    @ValueSource(strings = { "/unknown/hello", "/serviceA/unknown" })
+    void unknownGatewayRoute(String route) throws IOException {
+
+        APIResponse responseUnknownRoute = clientGateway.get(route);
+        Map<String, String> headers = responseUnknownRoute.headers();
+        String ctHeader = headers.get("content-type");
+
+        assertTrue(ctHeader.contains("application/json"));
+        assertEquals(404, responseUnknownRoute.status());
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode rootNode = mapper.readTree(responseUnknownRoute.text());
+
+        assertEquals(route, rootNode.get("path").asText());
+
     }
 
 }

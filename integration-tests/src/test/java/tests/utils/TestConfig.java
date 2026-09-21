@@ -1,5 +1,7 @@
 package tests.utils;
 
+import java.nio.file.Path;
+
 import org.aeonbits.owner.Config;
 import org.aeonbits.owner.ConfigFactory;
 
@@ -25,4 +27,10 @@ public interface TestConfig extends Config {
 
     @Key("timeout")
     int timeout();
+
+    @Key("ms1.filepath")
+    String ms1FilePath();
+
+    @Key("ms2.filepath")
+    String ms2FilePath();
 }
