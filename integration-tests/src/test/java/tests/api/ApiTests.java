@@ -10,6 +10,7 @@ import java.util.stream.Stream;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -148,7 +149,79 @@ public class ApiTests extends BaseTest {
         JsonNode rootNode = mapper.readTree(responseUnknownRoute.text());
 
         assertEquals(route, rootNode.get("path").asText());
+    }
 
+    @Disabled("Inconsistent behavior, request to ServiceB with invalid symbols in params return 200, should return 400 same as ServiceA")
+    @ParameterizedTest
+    @ValueSource(strings = { ">", "<", "\u0000", "\\", "\'", "\"" })
+    @DisplayName("ServiceB invalid query-params validation")
+    void serviceBIncorrectParamsValueValidation(String symbol) {
+        APIResponse response = clientB.getWithQueries(TestConfig.INSTANCE.serviceBEndpoint(),
+                "name",
+                "test" + symbol);
+
+        assertEquals(400, response.status());
+        assertTrue(response.text().contains("Недопустимые параметры запроса"));
+    }
+
+    @Test
+    @DisplayName("CORS header and restrictions")
+    void corsHeaders() {
+        APIResponse responseWithCors = clientGateway.getWithHeaders(TestConfig.INSTANCE.serviceAEndpoint(),
+                "Origin", "http://example.com");
+        Map<String, String> headersWithCors = responseWithCors.headers();
+        String accessControlAllowOriginHeader = headersWithCors.get("access-control-allow-origin");
+
+        assertEquals("*", accessControlAllowOriginHeader);
+
+        APIResponse responseNoCors = clientGateway.get(TestConfig.INSTANCE.serviceAEndpoint());
+        Map<String, String> headersNoCors = responseNoCors.headers();
+
+        assertFalse(headersNoCors.containsKey("access-control-allow-origin"));
+
+    }
+
+    @Test
+    @DisplayName("Option request with CORS-headers in response")
+    void optionRequest() {
+        APIResponse response = clientGateway.options(TestConfig.INSTANCE.serviceAEndpoint(), "Origin",
+                "http://example.com", "Access-Control-Request-Method", "GET");
+        Map<String, String> headers = response.headers();
+
+        assertEquals(200, response.status());
+        assertEquals("GET", headers.get("access-control-allow-methods"));
+        assertEquals("*", headers.get("access-control-allow-origin"));
+    }
+
+    @Disabled("BUG: No header ALlow in response headers")
+    @Test
+    @DisplayName("Request to ServiceA with not allowed method")
+    void serviceANotAllowedMethod() {
+        APIResponse response = clientA.post(TestConfig.INSTANCE.serviceAEndpoint());
+
+        assertEquals(405, response.status());
+        assertEquals("Method Not Allowed", response.statusText());
+        assertTrue(response.headers().containsKey("Allow"));
+    }
+
+    @Disabled("BUG: No header ALlow in response headers")
+    @Test
+    @DisplayName("Request to Gateway rout to ServiceA with not allowed method")
+    void gatewayNotAllowedMethod() {
+        APIResponse response = clientGateway.post(TestConfig.INSTANCE.serviceAEndpoint());
+
+        assertEquals(405, response.status());
+        assertEquals("Method Not Allowed", response.statusText());
+        assertTrue(response.headers().containsKey("Allow"));
+    }
+
+    @Disabled("BUG: Before test should teardown ServicA. Gateway response with 500, but should response with 502 or 503")
+    @Test
+    @DisplayName("Request to gateway fail because ServiceA is unavaliable")
+    void unavaliableServiceA() {
+        APIResponse response = clientGateway.get(TestConfig.INSTANCE.serviceAEndpoint());
+
+        assertEquals(503, response.status());
     }
 
 }

@@ -43,9 +43,10 @@ public class ApiClient {
     }
 
     @Step
-    public APIResponse options(String endpoint) {
+    public APIResponse options(String endpoint, String header1, String value1, String header2, String value2) {
         startLogging(endpoint, "OPTIONS", " ");
-        APIResponse response = request.fetch(endpoint, RequestOptions.create().setMethod("OPTIONS"));
+        APIResponse response = request.fetch(endpoint,
+                RequestOptions.create().setMethod("OPTIONS").setHeader(header1, value1).setHeader(header2, value2));
         addLogAllure(response);
         return response;
     }
